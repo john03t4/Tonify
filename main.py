@@ -184,15 +184,12 @@ def bonus(message):
     now = int(time.time())
     last_bonus = users.get(str(user_id), {}).get("last_bonus", 0)
 
-    # Check if the user can claim the bonus
     if now - last_bonus >= 86400:  # 86400 seconds = 24 hours
-        # Grant bonus and update the last_bonus timestamp
         users[str(user_id)]["balance"] += DAILY_BONUS
         users[str(user_id)]["last_bonus"] = now
         save_users(users)
         bot.send_message(user_id, f"✅ {DAILY_BONUS} TON bonus claimed!")
     else:
-        # Calculate the remaining time before the user can claim the bonus again
         remaining_time = 86400 - (now - last_bonus)
         hours = remaining_time // 3600
         minutes = (remaining_time % 3600) // 60
@@ -326,4 +323,5 @@ def toggle_withdrawal(message):
 
 # --- Run Bot ---
 print("Bot is running...")
-bot.polling()
+# Use long polling with timeout and allowed_updates parameters to avoid conflicts
+bot.polling(timeout=60, long_polling_timeout=60, allowed_updates=["message", "callback_query"])
