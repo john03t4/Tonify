@@ -1,18 +1,1 @@
-{
-    "7694475176": {
-        "balance": 0.001,
-        "referred": 2,
-        "wallet": null,
-        "verified": true,
-        "last_bonus": 0,
-        "referrer": null
-    },
-    "7223962235": {
-        "balance": 0.0,
-        "referred": 0,
-        "wallet": null,
-        "verified": false,
-        "last_bonus": 0,
-        "referrer": "7694475176"
-    }
-}
+
