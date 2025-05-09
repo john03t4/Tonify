@@ -176,19 +176,28 @@ def invite(message):
 def bonus(message):
     user_id = message.from_user.id
     users = load_users()
-    now = int(time.time())
-    last = users.get(str(user_id), {}).get("last_bonus", 0)
 
-    if now - last >= 86400:
+    # Ensure the user exists in the database
+    if str(user_id) not in users:
+        create_user(user_id)  # Initialize user if not found
+
+    now = int(time.time())
+    last_bonus = users.get(str(user_id), {}).get("last_bonus", 0)
+
+    # Check if the user can claim the bonus
+    if now - last_bonus >= 86400:  # 86400 seconds = 24 hours
+        # Grant bonus and update the last_bonus timestamp
         users[str(user_id)]["balance"] += DAILY_BONUS
         users[str(user_id)]["last_bonus"] = now
         save_users(users)
         bot.send_message(user_id, f"✅ {DAILY_BONUS} TON bonus claimed!")
     else:
-        remaining = 86400 - (now - last)
-        hours = remaining // 3600
-        minutes = (remaining % 3600) // 60
-        bot.send_message(user_id, f"⏳ Claim again in {hours}h {minutes}m.")
+        # Calculate the remaining time before the user can claim the bonus again
+        remaining_time = 86400 - (now - last_bonus)
+        hours = remaining_time // 3600
+        minutes = (remaining_time % 3600) // 60
+        bot.send_message(user_id, f"⏳ You can claim your bonus again in {hours}h {minutes}m.")
+
 
 @bot.message_handler(func=lambda message: message.text == "📝 Add Wallet")
 def add_wallet(message):
