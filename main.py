@@ -5,18 +5,8 @@ import json
 from telebot import types
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-# --- Load Config ---
-CONFIG_FILE = "config.json"
-if not os.path.exists(CONFIG_FILE):
-    raise FileNotFoundError(f"{CONFIG_FILE} not found. Please create it with your bot token.")
-
-with open(CONFIG_FILE, "r") as f:
-    config = json.load(f)
-
-TOKEN = config.get("TOKEN")
-if not TOKEN:
-    raise ValueError("TOKEN not found in config.json.")
-
+# --- Config ---
+TOKEN = "7818570118:AAE0Nhb50JxpvSc-RVW3txsequwemWRP_Nk"
 bot = telebot.TeleBot(TOKEN)
 
 # --- Constants ---
@@ -176,25 +166,19 @@ def invite(message):
 def bonus(message):
     user_id = message.from_user.id
     users = load_users()
-
-    # Ensure the user exists in the database
-    if str(user_id) not in users:
-        create_user(user_id)  # Initialize user if not found
-
     now = int(time.time())
-    last_bonus = users.get(str(user_id), {}).get("last_bonus", 0)
+    last = users.get(str(user_id), {}).get("last_bonus", 0)
 
-    if now - last_bonus >= 86400:  # 86400 seconds = 24 hours
+    if now - last >= 86400:
         users[str(user_id)]["balance"] += DAILY_BONUS
         users[str(user_id)]["last_bonus"] = now
         save_users(users)
         bot.send_message(user_id, f"✅ {DAILY_BONUS} TON bonus claimed!")
     else:
-        remaining_time = 86400 - (now - last_bonus)
-        hours = remaining_time // 3600
-        minutes = (remaining_time % 3600) // 60
-        bot.send_message(user_id, f"⏳ You can claim your bonus again in {hours}h {minutes}m.")
-
+        remaining = 86400 - (now - last)
+        hours = remaining // 3600
+        minutes = (remaining % 3600) // 60
+        bot.send_message(user_id, f"⏳ Claim again in {hours}h {minutes}m.")
 
 @bot.message_handler(func=lambda message: message.text == "📝 Add Wallet")
 def add_wallet(message):
@@ -249,11 +233,23 @@ def process_withdrawal(message, available_balance):
             bot.send_message(user_id, "⚠️ Set your wallet first.")
             return
 
-        withdrawal_message = (f"🚨 New Withdraw Request:\n"
-                              f"User: {user_id}\n"
-                              f"Wallet: {wallet}\n"
-                              f"Amount: {requested_amount:.4f} TON")
-        bot.send_message(PAYMENT_CHANNEL, withdrawal_message)
+        # First, build the styled withdrawal message
+        withdrawal_message = (
+            "🚨 **NEW WITHDRAWAL REQUEST** 🚨\n\n"
+            f"👤 **User ID:** `{user_id}`\n"
+            f"💼 **Wallet:** `{wallet}`\n"
+            f"💸 **Amount:** `{requested_amount:.4f} TON`\n\n"
+            "⚡ Please process this request promptly!"
+        )
+
+        # Send the photo with caption to the payment channel
+        try:
+            with open("with.png", "rb") as photo:
+                bot.send_photo(PAYMENT_CHANNEL, photo, caption=withdrawal_message, parse_mode='Markdown')
+        except Exception as e:
+            print(f"Failed to send withdrawal photo: {e}")
+            bot.send_message(PAYMENT_CHANNEL, withdrawal_message, parse_mode='Markdown')
+
 
         users[str(user_id)]["balance"] -= requested_amount
         save_users(users)
@@ -323,5 +319,4 @@ def toggle_withdrawal(message):
 
 # --- Run Bot ---
 print("Bot is running...")
-# Use long polling with timeout and allowed_updates parameters to avoid conflicts
-bot.polling(timeout=60, long_polling_timeout=60, allowed_updates=["message", "callback_query"])
+bot.polling()
