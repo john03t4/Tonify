@@ -17,6 +17,8 @@ TOKEN = config.get("TOKEN")
 if not TOKEN:
     raise ValueError("TOKEN not found in config.json.")
 
+bot = telebot.TeleBot(TOKEN)
+
 # --- Constants ---
 ADMIN_IDS = [7694475176]
 REFERRAL_REWARD = 0.005
